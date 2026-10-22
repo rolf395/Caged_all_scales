@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a5db0">
+<meta name="color-scheme" content="light dark">
+<title>CAGED – scale</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+--page:#faf9f5;--text-primary:#1f1e1d;--text-secondary:#5f5e5a;--text-muted:#8a887f;
+--surface-1:#f1efe8;--border-strong:#b9b6ab;
+--fill-accent:#2a6bd6;--on-accent:#ffffff;--bg-accent:#e4eefc;--border-accent:#9bbcf0;--text-accent:#1a4fa8;
+}
+@media (prefers-color-scheme:dark){
+:root{
+--page:#1f1e1d;--text-primary:#f1efe8;--text-secondary:#b4b2a9;--text-muted:#8a887f;
+--surface-1:#2b2a28;--border-strong:#55534e;
+--fill-accent:#4d8ae8;--on-accent:#ffffff;--bg-accent:#1e3a66;--border-accent:#4a78c2;--text-accent:#a9c8f7;
+}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.5;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent}
+main{max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:20px;font-weight:500;margin:0 0 2px}
+.sub{font-size:14px;color:var(--text-secondary);margin:0 0 16px}
+.lbl{font-size:13px;color:var(--text-secondary);margin:0 0 6px}
+button,select{font:inherit;color:var(--text-primary);background:transparent;border:1px solid var(--border-strong);border-radius:8px;cursor:pointer}
+#scales{margin:0 0 14px}
+.grp{font-size:12px;color:var(--text-muted);margin:8px 0 4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{padding:8px 12px;font-size:14px;line-height:1.2}
+button:active{transform:scale(.98)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--fill-accent);outline-offset:2px}
+#keys{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:0 0 14px}
+#shapes{display:flex;gap:6px;margin:0 0 8px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0 8px;flex-wrap:wrap}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--text-secondary);align-items:center}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px;margin-right:4px}
+#mode{display:flex;gap:4px}
+#mode button{padding:8px 14px;font-size:14px}
+#info{font-size:14px;color:var(--text-primary);margin:0 0 4px}
+#notes{font-size:14px;color:var(--text-secondary);margin:0 0 20px}
+svg{display:block;width:100%;height:auto}
+.help{border-top:1px solid var(--border-strong);padding-top:14px;font-size:14px;color:var(--text-secondary)}
+.help p{margin:0 0 6px}
+</style>
+</head>
+<body>
+<main>
+<h1>CAGED · scale</h1>
+<p class="sub">Scegli scala e tonalità, poi impara le cinque forme.</p>
+<p class="lbl">Scala</p>
+<div id="scales"></div>
+<p class="lbl">Tonalità</p>
+<div id="keys"></div>
+<p class="lbl">Forma, in ordine lungo il manico (tasti)</p>
+<div id="shapes"></div>
+<svg id="fb" viewBox="0 0 368 206" role="img" aria-label="Porzione di manico con le note della scala"></svg>
+<div class="row">
+<div class="legend">
+<span><span class="dot" style="background:var(--fill-accent)"></span>tonica</span>
+<span><span class="dot" style="background:var(--bg-accent);border:1px solid var(--border-accent)"></span>3ª e 5ª</span>
+<span><span class="dot" style="background:var(--surface-1);border:1px solid var(--border-strong)"></span>altre</span>
+</div>
+<div id="mode">
+<button data-m="note">Note</button>
+<button data-m="deg">Gradi</button>
+</div>
+</div>
+<p id="info"></p>
+<p id="notes"></p>
+<div class="help">
+<p>1. Scegli la scala e la tonalità.</p>
+<p>2. Tocca una forma: vedi le sue note sul manico.</p>
+<p>3. Parti dalle toniche (pallini pieni) e suona le note della forma.</p>
+<p>Le forme sono quelle della maggiore di riferimento: per le scale minori e i modi hanno le stesse note, cambia solo la tonica.</p>
+<p>Le lettere sono la notazione inglese: C Do, D Re, E Mi, F Fa, G Sol, A La, B Si.</p>
+</div>
+</main>
+<script>
+const L7=['C','D','E','F','G','A','B'];
+const NAT=[0,2,4,5,7,9,11];
+const NAMES12=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+const IT12=['Do','Re♭','Re','Mi♭','Mi','Fa','Fa♯','Sol','La♭','La','Si♭','Si'];
+const CH_S=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const CH_F=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+const FLAT=[1,3,5,8,10];
+const DEG={0:[1,'1'],1:[2,'♭2'],2:[2,'2'],3:[3,'♭3'],4:[3,'3'],5:[4,'4'],6:[5,'♭5'],7:[5,'5'],8:[6,'♭6'],9:[6,'6'],10:[7,'♭7'],11:[7,'7']};
+const SCALES=[
+{name:'maggiore',grp:'Maggiore e minori',iv:[0,2,4,5,7,9,11],off:0},
+{name:'minore naturale',grp:'Maggiore e minori',iv:[0,2,3,5,7,8,10],off:3},
+{name:'minore armonica',grp:'Maggiore e minori',iv:[0,2,3,5,7,8,11],off:3},
+{name:'minore melodica',grp:'Maggiore e minori',iv:[0,2,3,5,7,9,11],off:3},
+{name:'pentatonica maggiore',grp:'Pentatoniche e blues',iv:[0,2,4,7,9],off:0},
+{name:'pentatonica minore',grp:'Pentatoniche e blues',iv:[0,3,5,7,10],off:3},
+{name:'blues',grp:'Pentatoniche e blues',iv:[0,3,5,6,7,10],off:3},
+{name:'modo dorico',grp:'Modi',iv:[0,2,3,5,7,9,10],off:10},
+{name:'modo frigio',grp:'Modi',iv:[0,1,3,5,7,8,10],off:8},
+{name:'modo lidio',grp:'Modi',iv:[0,2,4,6,7,9,11],off:7,over:{6:[4,'♯4']}},
+{name:'modo misolidio',grp:'Modi',iv:[0,2,4,5,7,9,10],off:5},
+{name:'modo locrio',grp:'Modi',iv:[0,1,3,5,6,8,10],off:1}
+];
+const OPEN=[4,11,7,2,9,4];
+const SNAMES=['E','B','G','D','A','E'];
+const SH=[{n:'C',own:0,a:0},{n:'A',own:9,a:-1},{n:'G',own:7,a:-1},{n:'E',own:4,a:-2},{n:'D',own:2,a:-1}];
+const st={scale:0,key:0,shape:'C',mode:'note'};
+const $=id=>document.getElementById(id);
+const X0=32,CW=66,Y0=22,RS=30;
+function load(){
+try{
+var s=JSON.parse(localStorage.getItem('caged2')||'{}');
+if(s.scale>=0&&s.scale<SCALES.length)st.scale=s.scale|0;
+if(s.key>=0&&s.key<12)st.key=s.key|0;
+if(['C','A','G','E','D'].indexOf(s.shape)>=0)st.shape=s.shape;
+if(s.mode==='deg'||s.mode==='note')st.mode=s.mode;
+}catch(e){}
+}
+function save(){
+try{localStorage.setItem('caged2',JSON.stringify(st));}catch(e){}
+}
+function sty(b,on){b.style.background=on?'var(--bg-accent)':'';b.style.borderColor=on?'var(--border-accent)':'';b.style.color=on?'var(--text-accent)':'';}
+function scaleMap(si,t){
+var sc=SCALES[si],anchor=(t+sc.off)%12;
+var pf=FLAT.indexOf(t)>=0||FLAT.indexOf(anchor)>=0;
+var rl=L7.indexOf(NAMES12[t].charAt(0)),out={};
+var third=sc.iv.indexOf(4)>=0?4:3,fifth=sc.iv.indexOf(7)>=0?7:6;
+sc.iv.forEach(function(i){
+var d=(sc.over&&sc.over[i])||DEG[i];
+var semi=(t+i)%12,li=(rl+d[0]-1)%7,diff=(semi-NAT[li]+12)%12,nm;
+if(diff===0)nm=L7[li];
+else if(diff===1)nm=L7[li]+'♯';
+else if(diff===11)nm=L7[li]+'♭';
+else nm=(pf?CH_F:CH_S)[semi];
+out[semi]={name:nm,label:d[1],root:i===0,chord:(i===third||i===fifth)};
+});
+return out;
+}
+function windows(anchor){
+return SH.map(function(s){
+var b=(anchor-s.own+12)%12,lo=Math.max(0,b+s.a);
+return {n:s.n,lo:lo,hi:lo+4};
+});
+}
+function render(){
+var sc=SCALES[st.scale],t=st.key,anchor=(t+sc.off)%12;
+var wins=windows(anchor).sort(function(a,b){return a.lo-b.lo||a.hi-b.hi;});
+$('shapes').innerHTML=wins.map(function(w){return '<button data-s="'+w.n+'" style="flex:1;padding:6px 0;line-height:1.3;"><span style="display:block;font-size:15px;font-weight:500;">'+w.n+'</span><span style="display:block;font-size:11px;color:var(--text-secondary);">'+w.lo+'–'+w.hi+'</span></button>';}).join('');
+document.querySelectorAll('#shapes button').forEach(function(b){sty(b,b.dataset.s===st.shape);});
+document.querySelectorAll('#keys button').forEach(function(b){sty(b,+b.dataset.k===st.key);});
+document.querySelectorAll('#mode button').forEach(function(b){sty(b,b.dataset.m===st.mode);});
+document.querySelectorAll('#scales button').forEach(function(b){sty(b,+b.dataset.i===st.scale);});
+var cur=wins.filter(function(w){return w.n===st.shape;})[0];
+var L=cur.lo,map=scaleMap(st.scale,t),p=[],roots=[];
+for(var i=0;i<=5;i++){
+var x=X0+i*CW;
+if(L===0&&i===0)continue;
+var nut=(L===0&&i===1);
+p.push('<line x1="'+x+'" y1="'+(Y0-8)+'" x2="'+x+'" y2="'+(Y0+5*RS+8)+'" style="stroke:'+(nut?'var(--text-secondary)':'var(--border-strong)')+'" stroke-width="'+(nut?4:1)+'"/>');
+}
+for(var s=0;s<6;s++){
+var y=Y0+s*RS;
+p.push('<line x1="'+X0+'" y1="'+y+'" x2="'+(X0+5*CW)+'" y2="'+y+'" style="stroke:var(--border-strong)" stroke-width="1"/>');
+p.push('<text x="14" y="'+(y+4)+'" font-size="12" text-anchor="middle" style="fill:var(--text-secondary)">'+SNAMES[s]+'</text>');
+}
+for(var i=0;i<5;i++){
+p.push('<text x="'+(X0+(i+0.5)*CW)+'" y="198" font-size="12" text-anchor="middle" style="fill:var(--text-muted)">'+(L+i)+'</text>');
+}
+for(var s=0;s<6;s++){
+for(var i=0;i<5;i++){
+var f=L+i,n=map[(OPEN[s]+f)%12];
+if(!n)continue;
+var cx=X0+(i+0.5)*CW,cy=Y0+s*RS;
+var lab=st.mode==='deg'?n.label:n.name;
+if(n.root){
+roots.push('corda '+(s+1)+' (tasto '+f+')');
+p.push('<circle cx="'+cx+'" cy="'+cy+'" r="13" style="fill:var(--fill-accent)"/>');
+p.push('<text x="'+cx+'" y="'+(cy+4)+'" font-size="12" font-weight="500" text-anchor="middle" style="fill:var(--on-accent)">'+lab+'</text>');
+}else if(n.chord){
+p.push('<circle cx="'+cx+'" cy="'+cy+'" r="13" style="fill:var(--bg-accent);stroke:var(--border-accent)" stroke-width="1"/>');
+p.push('<text x="'+cx+'" y="'+(cy+4)+'" font-size="12" text-anchor="middle" style="fill:var(--text-accent)">'+lab+'</text>');
+}else{
+p.push('<circle cx="'+cx+'" cy="'+cy+'" r="13" style="fill:var(--surface-1);stroke:var(--border-strong)" stroke-width="1"/>');
+p.push('<text x="'+cx+'" y="'+(cy+4)+'" font-size="12" text-anchor="middle" style="fill:var(--text-secondary)">'+lab+'</text>');
+}
+}
+}
+$('fb').innerHTML=p.join('');
+$('info').textContent=NAMES12[t]+' '+sc.name+' · forma '+cur.n+' · tasti '+cur.lo+'–'+cur.hi+' · toniche: '+roots.join(', ');
+var names=sc.iv.map(function(i){return map[(t+i)%12].name;}).join(' ');
+var labels=sc.iv.map(function(i){return map[(t+i)%12].label;}).join(' ');
+$('notes').textContent='Note: '+names+' · Gradi: '+labels+(anchor!==t?' · Forme prese da '+NAMES12[anchor]+' maggiore':'');
+save();
+}
+var gh='',lastGrp='';
+SCALES.forEach(function(s,i){
+if(s.grp!==lastGrp){if(lastGrp)gh+='</div>';gh+='<p class="grp">'+s.grp+'</p><div class="chips">';lastGrp=s.grp;}
+gh+='<button data-i="'+i+'">'+s.name.charAt(0).toUpperCase()+s.name.slice(1)+'</button>';
+});
+$('scales').innerHTML=gh+'</div>';
+$('keys').innerHTML=NAMES12.map(function(k,i){return '<button data-k="'+i+'" style="padding:6px 0;line-height:1.3;min-width:0;"><span style="display:block;font-size:15px;font-weight:500;">'+k+'</span><span style="display:block;font-size:11px;color:var(--text-secondary);">'+IT12[i]+'</span></button>';}).join('');
+$('scales').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st.scale=+b.dataset.i;render();});
+$('keys').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st.key=+b.dataset.k;render();});
+$('shapes').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st.shape=b.dataset.s;render();});
+$('mode').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st.mode=b.dataset.m;render();});
+load();
+render();
+if('serviceWorker' in navigator){
+window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});
+}
+</script>
+</body>
+</html>
